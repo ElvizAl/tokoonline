@@ -17,6 +17,24 @@ To build this application for production:
 bun --bun run build
 ```
 
+## Database (Prisma 7 + Neon)
+
+Isi `.env` menggunakan connection string dari Neon:
+
+- `DATABASE_URL`: pooled connection string untuk aplikasi.
+- `DIRECT_URL`: direct connection string untuk migrasi.
+
+Tambahkan model di `prisma/schema.prisma`, lalu jalankan:
+
+```bash
+bun run db:migrate --name init
+bun run db:generate
+```
+
+Gunakan `import { prisma } from '@/lib/prisma.server'` hanya di kode server.
+`bun run db:studio` membuka Prisma Studio. Build otomatis menjalankan generate.
+Belum ada model atau migrasi; koneksi database belum diuji karena URL belum diisi.
+
 ## Styling
 
 This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.

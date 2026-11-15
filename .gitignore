@@ -4,6 +4,7 @@ dist
 dist-ssr
 *.local
 .env
+src/generated/prisma
 .nitro
 .tanstack
 .wrangler
