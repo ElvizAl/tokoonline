@@ -24,7 +24,9 @@ Isi `.env` menggunakan connection string dari Neon:
 - `DATABASE_URL`: pooled connection string untuk aplikasi.
 - `DIRECT_URL`: direct connection string untuk migrasi.
 
-Tambahkan model di `prisma/schema.prisma`, lalu jalankan:
+Schema `prisma/schema.prisma` berisi model Better Auth dan enum `Role` (`USER`, `ADMIN`).
+Akun baru mendapat role `USER`; role tidak dapat diisi lewat input pendaftaran.
+Untuk menerapkan schema ke database, jalankan:
 
 ```bash
 bun run db:migrate --name init
@@ -33,7 +35,7 @@ bun run db:generate
 
 Gunakan `import { prisma } from '@/lib/prisma.server'` hanya di kode server.
 `bun run db:studio` membuka Prisma Studio. Build otomatis menjalankan generate.
-Belum ada model atau migrasi; koneksi database belum diuji karena URL belum diisi.
+Migrasi belum dijalankan dan koneksi database belum diuji pada tahap setup schema.
 
 ## Styling
 
