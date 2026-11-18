@@ -1,81 +1,28 @@
 import { createServerFn } from '@tanstack/react-start'
-import type { LoginInput, RegisterInput } from './auth.schema'
-import { loginSchema, registerSchema } from './auth.schema'
+import { getRequestHeaders } from '@tanstack/react-start/server'
+import { APIError } from 'better-auth/api'
+import { loginSchema } from './auth.schema'
 import { auth } from '#/lib/auth/auth'
-import { dbMiddleware } from '#/middleware/db.middleware'
-
-export const registerServerFn = createServerFn({ method: 'POST' })
-  .validator((data: RegisterInput) => registerSchema.parse(data))
-  .middleware([dbMiddleware])
-  .handler(async ({ data, context }) => {
-    try {
-      const existingUser = await context.db.user.findUnique({
-        where: {
-          email: data.email,
-        },
-      })
-
-      if (existingUser) {
-        return {
-          success: false,
-          message: 'Email sudah digunakan, silakan gunakan email lain.',
-        }
-      }
-
-      await auth.api.signUpEmail({
-        body: {
-          name: data.name,
-          email: data.email,
-          password: data.password,
-        },
-      })
-
-      return {
-        success: true,
-        message: 'Registrasi berhasil redirect ke halaman login',
-      }
-    } catch (error) {
-      console.error(error)
-      return {
-        success: false,
-        message: 'Internal Server Error',
-      }
-    }
-  })
 
 export const loginServerFn = createServerFn({ method: 'POST' })
-  .middleware([dbMiddleware])
-  .validator((data: LoginInput) => loginSchema.parse(data))
-  .handler(async ({ data, context }) => {
+  .validator((input: unknown) => loginSchema.parse(input))
+  .handler(async ({ data }) => {
     try {
-      const user = await context.db.user.findUnique({
-        where: {
-          email: data.email,
-        },
-      })
-
-      if (!user) {
+      await auth.api.signInEmail({ body: data, headers: getRequestHeaders() })
+      return { success: true as const, message: 'Login berhasil.' }
+    } catch (error) {
+      if (error instanceof APIError) {
         return {
-          success: false,
-          message: 'Email atau kata sandi salah.',
+          success: false as const,
+          message:
+            error.status === 'TOO_MANY_REQUESTS'
+              ? 'Terlalu banyak percobaan. Coba lagi nanti.'
+              : 'Tidak dapat masuk. Periksa email dan kata sandi kamu.',
         }
       }
-      await auth.api.signInEmail({
-        body: {
-          email: data.email,
-          password: data.password,
-        },
-      })
-
       return {
-        success: true,
-        message: 'Login berhasil',
-      }
-    } catch (error) {
-      console.error('Login error:', error)
-      return {
-        success: false,
-        message: 'Internal Server Error',
+        success: false as const,
+        message: 'Layanan login sedang bermasalah. Coba lagi nanti.',
       }
     }
   })
