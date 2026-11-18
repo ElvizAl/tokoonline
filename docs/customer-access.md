@@ -1,5 +1,7 @@
 # Customer access operations
 
+Admin and customer dashboards include a GPT-6 Sol quota tracker. It reads the session (5-hour) and weekly windows reported by each active Codex connection in 9Router, polls every minute, and displays provider reset timestamps in Fiji time. These are shared provider-account quotas, not per-customer or per-model token allowances. Missing windows remain unavailable, and a passed reset timestamp does not clear the displayed usage until the provider reports new data. An active authenticated account is required; customer responses use generic account labels and omit provider account names and IDs. Admins retain the original account labels.
+
 Tokenmaxxing runs access reconciliation on server startup and every 30 seconds through `server/plugins/access.ts`. Run the Node/Bun Nitro server continuously for automatic enforcement. A sleeping/serverless process cannot guarantee these checks. Restart the application after updating it.
 
 - Disabling a customer revokes portal sessions immediately and queues the associated 9Router key for deactivation.

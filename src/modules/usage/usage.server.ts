@@ -39,6 +39,8 @@ export async function routerClient() {
     path:
       | '/api/usage/history'
       | '/api/keys'
+      | '/api/providers'
+      | `/api/usage/${string}`
       | `/api/usage/stats?period=${UsagePeriod}`
       | `/api/keys/${string}`,
     init?: { method: 'PUT' | 'POST'; body: string },

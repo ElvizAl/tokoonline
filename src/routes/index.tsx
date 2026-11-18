@@ -10,6 +10,7 @@ import { PageLoading } from '#/modules/dashboard/components/page-loading'
 import type { SearchSchemaInput } from '@tanstack/react-router'
 import { PeriodSelect } from '#/modules/usage/period-select'
 import { QuotaCard } from '#/modules/usage/quota-card'
+import { SolQuotaTracker } from '#/modules/usage/sol-quota-tracker'
 import { ModelUsageChart } from '#/modules/usage/model-usage-chart'
 import { periodSchema } from '#/modules/usage/usage.options'
 import {
@@ -218,6 +219,7 @@ function DashboardContent({
               </div>
             ))}
           </section>
+          <SolQuotaTracker />
           {user.role !== 'ADMIN' && (
             <>
               <section className="mt-6 rounded-2xl border border-[#e1e7e3] bg-white p-6">
