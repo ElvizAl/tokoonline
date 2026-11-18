@@ -16,7 +16,7 @@ export const getApiAccessServerFn = createServerFn({ method: 'GET' }).handler(
     const id = await viewer()
     try {
       return await customerAccessInfo(id)
-    } catch {
+    } catch (error) {
       return {
         status: 'error' as const,
         baseUrl: '',
@@ -25,7 +25,9 @@ export const getApiAccessServerFn = createServerFn({ method: 'GET' }).handler(
         keyActive: false,
         models: [] as string[],
         message:
-          'Informasi API belum tersedia. Coba muat ulang atau hubungi admin.',
+          error instanceof Error && error.message === 'KEY_NOT_FOUND'
+            ? 'API key yang terhubung sudah tidak tersedia di 9Router. Hubungi admin untuk mendapatkan key baru.'
+            : 'Informasi API belum tersedia. Coba muat ulang atau hubungi admin.',
       }
     }
   },

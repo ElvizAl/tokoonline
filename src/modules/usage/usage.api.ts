@@ -6,7 +6,7 @@ import {
 import { z } from 'zod'
 import { auth } from '#/lib/auth/auth'
 import { prisma } from '#/lib/db/prisma'
-import { fetchRouterUsage } from './usage.server'
+import { fetchRouterUsagePeriods } from './usage.server'
 import { periodSchema, quotaSummary } from './usage.options'
 
 export const getUsageServerFn = createServerFn({ method: 'GET' })
@@ -37,12 +37,13 @@ export const getUsageServerFn = createServerFn({ method: 'GET' })
       }
     try {
       const key = isAdmin ? undefined : user!.routerKeyId!
-      const data = await fetchRouterUsage(key, options.period)
-      const monthly = !isAdmin
-        ? options.period === '30d'
-          ? data
-          : await fetchRouterUsage(key, '30d')
-        : null
+      const periods = await fetchRouterUsagePeriods(
+        key,
+        isAdmin ? [options.period] : [options.period, '30d'],
+      )
+      const data = periods.get(options.period)!
+      const monthly = isAdmin ? null : periods.get('30d')!
+
       return {
         status: 'connected' as const,
         data,
@@ -51,7 +52,16 @@ export const getUsageServerFn = createServerFn({ method: 'GET' })
           ? 'Ringkasan seluruh pelanggan · khusus admin'
           : 'Pemakaian API key milik akun kamu',
       }
-    } catch {
+    } catch (error) {
+      if (error instanceof Error && error.message === 'KEY_UNAVAILABLE') {
+        return {
+          status: 'unlinked' as const,
+          data: null,
+          quota: null,
+          message:
+            'API key akun ini sudah tidak tersedia di 9Router. Hubungi admin untuk menghubungkan key khusus yang baru.',
+        }
+      }
       return {
         status: 'error' as const,
         data: null,

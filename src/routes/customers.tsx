@@ -1,11 +1,15 @@
-import { useState } from 'react'
-import { DashboardSidebar } from '#/modules/dashboard/components/dashboard-sidebar'
+import { Suspense, useState } from 'react'
 import {
+  Await,
   createFileRoute,
   Link,
   redirect,
   useRouter,
 } from '@tanstack/react-router'
+import { loadPageData } from '#/lib/route-data'
+import { PageLoading } from '#/modules/dashboard/components/page-loading'
+import { CreateApiKeyForm } from '#/modules/api-access/create-api-key-form'
+import { DashboardSidebar } from '#/modules/dashboard/components/dashboard-sidebar'
 import type { FormEvent } from 'react'
 import { getSessionServerFn } from '#/lib/auth/auth.session'
 import {
@@ -20,7 +24,7 @@ export const Route = createFileRoute('/customers')({
     if (!session) throw redirect({ to: '/login' })
     if (session.user.role !== 'ADMIN') throw redirect({ to: '/' })
   },
-  loader: () => getCustomersServerFn(),
+  loader: () => loadPageData(() => getCustomersServerFn()),
   head: () => ({ meta: [{ title: 'Pelanggan — Tokenmaxxing' }] }),
   component: CustomersPage,
 })
@@ -28,7 +32,31 @@ const field =
   'mt-2 h-11 w-full rounded-lg border border-[#dce4de] bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-[#95ae82]'
 type KeyOption = { id: string; name: string }
 function CustomersPage() {
-  const { customers, keys, message: loadMessage } = Route.useLoaderData()
+  const { data } = Route.useLoaderData()
+  return (
+    <Suspense
+      fallback={<PageLoading isAdmin active="customers" title="Pelanggan" />}
+    >
+      <Await promise={data}>
+        {(pageData) => <CustomersContent pageData={pageData} />}
+      </Await>
+    </Suspense>
+  )
+}
+function CustomersContent({
+  pageData,
+}: {
+  pageData: Awaited<ReturnType<typeof getCustomersServerFn>>
+}) {
+  const { customers, keys: loadedKeys, message: loadMessage } = pageData
+  const [createdKeys, setCreatedKeys] = useState<KeyOption[]>([])
+  const [selectedKeyId, setSelectedKeyId] = useState('')
+  const keys = [
+    ...loadedKeys,
+    ...createdKeys.filter(
+      (key) => !loadedKeys.some((loaded) => loaded.id === key.id),
+    ),
+  ]
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState('')
@@ -53,6 +81,7 @@ function CustomersPage() {
       setMessage(result.message)
       if (result.success) {
         form.reset()
+        setSelectedKeyId('')
         await router.invalidate()
       }
     } catch {
@@ -84,6 +113,12 @@ function CustomersPage() {
             {loadMessage}
           </p>
         )}
+        <CreateApiKeyForm
+          onCreated={(key) => {
+            setCreatedKeys((previous) => [...previous, key])
+            setSelectedKeyId(key.id)
+          }}
+        />
         <section className="rounded-2xl border border-[#e1e7e3] bg-white p-6">
           <h2 className="font-semibold">Tambah pelanggan</h2>
           <form
@@ -131,7 +166,8 @@ function CustomersPage() {
               <select
                 name="routerKeyId"
                 required
-                defaultValue=""
+                value={selectedKeyId}
+                onChange={(event) => setSelectedKeyId(event.target.value)}
                 className={field}
               >
                 <option value="" disabled>

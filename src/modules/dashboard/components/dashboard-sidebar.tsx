@@ -16,7 +16,12 @@ export function DashboardSidebar({
   active,
 }: {
   isAdmin: boolean
-  active: 'dashboard' | 'customers' | 'settings' | 'activity' | 'api-access'
+  active:
+    | 'dashboard'
+    | 'customers'
+    | 'settings'
+    | 'activity'
+    | 'api-access'
 }) {
   function navigation() {
     return (

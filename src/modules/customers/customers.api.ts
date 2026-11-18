@@ -7,7 +7,10 @@ import { prisma } from '#/lib/db/prisma'
 import { requireAdmin } from '#/lib/auth/admin.server'
 import { resetPasswordInTransaction } from './customers.server'
 import { periodSchema, quotaSummary } from '#/modules/usage/usage.options'
-import { fetchRouterKeys, fetchRouterUsage } from '#/modules/usage/usage.server'
+import {
+  fetchRouterKeys,
+  fetchRouterUsagePeriods,
+} from '#/modules/usage/usage.server'
 import { syncCustomerAccess } from './access.server'
 
 const customerSelect = {
@@ -185,15 +188,17 @@ export const getCustomerDetailServerFn = createServerFn({ method: 'GET' })
         message: 'Pelanggan belum dihubungkan ke API key.',
       }
     try {
-      const usage = await fetchRouterUsage(customer.routerKeyId, data.period)
-      const monthly =
-        data.period === '30d'
-          ? usage
-          : await fetchRouterUsage(customer.routerKeyId, '30d')
+      const periods = await fetchRouterUsagePeriods(customer.routerKeyId, [
+        data.period,
+        '30d',
+      ])
+      const usage = periods.get(data.period)!
+      const quotaUsage = periods.get('30d')!
+
       return {
         customer,
         usage,
-        quota: quotaSummary(customer.tokenQuota, monthly.total),
+        quota: quotaSummary(customer.tokenQuota, quotaUsage.total),
         message: '',
       }
     } catch {

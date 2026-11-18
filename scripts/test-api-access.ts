@@ -69,7 +69,7 @@ try {
   const infoA = await customerAccessInfo(a),
     infoB = await customerAccessInfo(b)
   assert.deepEqual(infoA.models, ['cx/gpt-6-luna'])
-  assert.deepEqual(infoB.models, [])
+  assert.deepEqual(infoB.models, ['cx/gpt-6-sol'])
   assert.equal(JSON.stringify(infoA).includes(keyA), false)
   assert.equal(JSON.stringify(infoA).includes(keyB), false)
   assert.equal(infoA.baseUrl, 'https://tokenmaxxing-router.test/v1')

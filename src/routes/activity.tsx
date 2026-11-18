@@ -1,28 +1,52 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { Suspense } from 'react'
+import { Await, createFileRoute, redirect } from '@tanstack/react-router'
+import { loadPageData } from '#/lib/route-data'
+import { PageLoading } from '#/modules/dashboard/components/page-loading'
 import { DashboardSidebar } from '#/modules/dashboard/components/dashboard-sidebar'
 import { getSessionServerFn } from '#/lib/auth/auth.session'
 import { getAuditLogServerFn } from '#/modules/customers/customers.api'
+
 export const Route = createFileRoute('/activity')({
   beforeLoad: async () => {
     const session = await getSessionServerFn()
     if (!session) throw redirect({ to: '/login' })
     if (session.user.role !== 'ADMIN') throw redirect({ to: '/' })
   },
-  loader: () => getAuditLogServerFn(),
+  loader: () => loadPageData(() => getAuditLogServerFn()),
   head: () => ({ meta: [{ title: 'Riwayat aktivitas — Tokenmaxxing' }] }),
   component: Activity,
 })
 const labels: Record<string, string> = {
   CUSTOMER_CREATED: 'Pelanggan dibuat',
+  API_KEY_CREATED: 'API key dibuat',
   KEY_LINK_CHANGED: 'Koneksi key diubah',
   PASSWORD_RESET: 'Password direset',
   QUOTA_CHANGED: 'Kuota diubah',
   ACCESS_CHANGED: 'Status / paket diubah',
   KEY_ENABLED: 'Key diaktifkan',
   KEY_BLOCKED: 'Key diblokir',
+  KEY_REISSUED: 'Key pelanggan diganti',
 }
 function Activity() {
-  const rows = Route.useLoaderData()
+  const { data } = Route.useLoaderData()
+  return (
+    <Suspense
+      fallback={
+        <PageLoading isAdmin active="activity" title="Riwayat aktivitas" />
+      }
+    >
+      <Await promise={data}>
+        {(pageData) => <ActivityContent pageData={pageData} />}
+      </Await>
+    </Suspense>
+  )
+}
+function ActivityContent({
+  pageData,
+}: {
+  pageData: Awaited<ReturnType<typeof getAuditLogServerFn>>
+}) {
+  const rows = pageData
   return (
     <div className="min-h-svh bg-[#f6f8f7] px-5 py-10 text-[#243e34] lg:pl-72">
       <DashboardSidebar isAdmin active="activity" />
@@ -78,6 +102,7 @@ function describe(value: unknown) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return '—'
   const d = value as Record<string, unknown>
   const parts: string[] = []
+  if (typeof d.keyName === 'string') parts.push('Nama key: ' + d.keyName)
   if (typeof d.reason === 'string') parts.push(d.reason)
   if (typeof d.isActive === 'boolean')
     parts.push(d.isActive ? 'Akun aktif' : 'Akun nonaktif')

@@ -2,6 +2,7 @@ import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { NavigationProgress } from '#/modules/dashboard/components/navigation-progress'
 
 import appCss from '../styles.css?url'
 
@@ -36,6 +37,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
+        <NavigationProgress />
         <TooltipProvider>{children}</TooltipProvider>
         <TanStackDevtools
           config={{

@@ -1,3 +1,7 @@
+import { Suspense } from 'react'
+import { Await } from '@tanstack/react-router'
+import { loadPageData } from '#/lib/route-data'
+import { PageLoading } from '#/modules/dashboard/components/page-loading'
 import { CustomerAccessPanel } from '#/modules/customers/customer-access-panel'
 import type { SearchSchemaInput } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -31,16 +35,36 @@ export const Route = createFileRoute('/customer/$customerId')({
     if (session.user.role !== 'ADMIN') throw redirect({ to: '/' })
   },
   loader: ({ params, deps }) =>
-    getCustomerDetailServerFn({
-      data: { userId: params.customerId, period: deps.period },
-    }),
+    loadPageData(() =>
+      getCustomerDetailServerFn({
+        data: { userId: params.customerId, period: deps.period },
+      }),
+    ),
   head: () => ({ meta: [{ title: 'Detail pelanggan — Tokenmaxxing' }] }),
   component: CustomerDetail,
 })
 const field =
   'mt-2 h-11 w-full rounded-lg border border-[#dce4de] bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-[#95ae82]'
 function CustomerDetail() {
-  const { customer, usage, quota, message } = Route.useLoaderData()
+  const { data } = Route.useLoaderData()
+  return (
+    <Suspense
+      fallback={
+        <PageLoading isAdmin active="customers" title="Detail pelanggan" />
+      }
+    >
+      <Await promise={data}>
+        {(pageData) => <CustomerContent pageData={pageData} />}
+      </Await>
+    </Suspense>
+  )
+}
+function CustomerContent({
+  pageData,
+}: {
+  pageData: Awaited<ReturnType<typeof getCustomerDetailServerFn>>
+}) {
+  const { customer, usage, quota, message } = pageData
   const { period } = Route.useSearch()
   const navigate = useNavigate()
   const router = useRouter()

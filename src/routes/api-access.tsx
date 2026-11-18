@@ -1,3 +1,7 @@
+import { Suspense } from 'react'
+import { Await } from '@tanstack/react-router'
+import { loadPageData } from '#/lib/route-data'
+import { PageLoading } from '#/modules/dashboard/components/page-loading'
 import { useState } from 'react'
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { Copy, Eye, EyeOff, KeyRound } from 'lucide-react'
@@ -14,7 +18,7 @@ export const Route = createFileRoute('/api-access')({
     if (session.user.role === 'ADMIN') throw redirect({ to: '/' })
     return { user: session.user }
   },
-  loader: () => getApiAccessServerFn(),
+  loader: () => loadPageData(() => getApiAccessServerFn()),
   head: () => ({
     meta: [
       { title: 'Akses API — Tokenmaxxing' },
@@ -24,7 +28,25 @@ export const Route = createFileRoute('/api-access')({
   component: ApiAccess,
 })
 function ApiAccess() {
-  const data = Route.useLoaderData()
+  const { data } = Route.useLoaderData()
+  return (
+    <Suspense
+      fallback={
+        <PageLoading isAdmin={false} active="api-access" title="Akses API" />
+      }
+    >
+      <Await promise={data}>
+        {(pageData) => <ApiAccessContent pageData={pageData} />}
+      </Await>
+    </Suspense>
+  )
+}
+function ApiAccessContent({
+  pageData,
+}: {
+  pageData: Awaited<ReturnType<typeof getApiAccessServerFn>>
+}) {
+  const data = pageData
   const [revealed, setRevealed] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState('')

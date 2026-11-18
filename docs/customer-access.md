@@ -12,6 +12,8 @@ Tokenmaxxing runs access reconciliation on server startup and every 30 seconds t
 
 Audit records start with this implementation; prior actions are not backfilled. Passwords and raw API keys are not included in audit logs.
 
+Admins can create a 9Router API key from the Customers page by entering a key name. The new key is selected automatically in the customer creation form and is also available for linking to an existing customer. Copy the key before leaving the page; the creation result is kept only in component memory. Creation requires an active admin session. If creation cannot be confirmed, reload the key list before retrying, since a timed-out upstream request may already have created the key.
+
 ## Checks
 
 `bun test src/modules/usage src/modules/customers/access-policy.test.ts`

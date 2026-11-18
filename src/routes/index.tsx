@@ -1,16 +1,23 @@
+import { Suspense, useState } from 'react'
+import {
+  Await,
+  createFileRoute,
+  redirect,
+  useNavigate,
+} from '@tanstack/react-router'
+import { loadPageData } from '#/lib/route-data'
+import { PageLoading } from '#/modules/dashboard/components/page-loading'
 import type { SearchSchemaInput } from '@tanstack/react-router'
-import { useState } from 'react'
 import { PeriodSelect } from '#/modules/usage/period-select'
 import { QuotaCard } from '#/modules/usage/quota-card'
+import { ModelUsageChart } from '#/modules/usage/model-usage-chart'
 import { periodSchema } from '#/modules/usage/usage.options'
-import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import {
   Activity,
   ArrowDownLeft,
   ArrowUpRight,
   ChevronRight,
   CircleHelp,
-  Cpu,
   KeyRound,
   LayoutDashboard,
   LogOut,
@@ -30,7 +37,7 @@ export const Route = createFileRoute('/')({
     if (!session) throw redirect({ to: '/login' })
     return { user: session.user }
   },
-  loader: ({ deps }) => getUsageServerFn({ data: deps }),
+  loader: ({ deps }) => loadPageData(() => getUsageServerFn({ data: deps })),
   head: () => ({
     meta: [
       { title: 'Dashboard — Tokenmaxxing' },
@@ -45,7 +52,30 @@ export const Route = createFileRoute('/')({
 
 function DashboardPage() {
   const { user } = Route.useRouteContext()
-  const usage = Route.useLoaderData()
+  const { data } = Route.useLoaderData()
+  return (
+    <Suspense
+      fallback={
+        <PageLoading
+          isAdmin={user.role === 'ADMIN'}
+          active="dashboard"
+          title="Dashboard"
+        />
+      }
+    >
+      <Await promise={data}>
+        {(pageData) => <DashboardContent pageData={pageData} />}
+      </Await>
+    </Suspense>
+  )
+}
+function DashboardContent({
+  pageData,
+}: {
+  pageData: Awaited<ReturnType<typeof getUsageServerFn>>
+}) {
+  const { user } = Route.useRouteContext()
+  const usage = pageData
   const { period } = Route.useSearch()
   const data = usage.data
   const format = (value: number | undefined) =>
@@ -213,6 +243,7 @@ function DashboardPage() {
               <QuotaCard quota={usage.quota} />
             </>
           )}
+
           <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_320px]">
             <section className="overflow-hidden rounded-2xl border border-[#e1e7e3] bg-white">
               <div className="border-b border-[#edf0ed] p-6">
@@ -310,32 +341,11 @@ function DashboardPage() {
               </p>
             </section>
           </div>
-          <section className="mt-6 rounded-2xl border border-[#e1e7e3] bg-white p-6">
-            <div className="flex items-center gap-3">
-              <Cpu size={19} className="text-[#789263]" />
-              <h2 className="font-semibold">Pemakaian per model</h2>
-            </div>
-            {data && data.models.length > 0 ? (
-              <div className="mt-5 divide-y divide-[#edf0ed]">
-                {data.models.map((model) => (
-                  <div
-                    key={model.name}
-                    className="flex flex-wrap items-center justify-between gap-3 py-4 text-sm"
-                  >
-                    <span className="font-medium">{model.name}</span>
-                    <span className="text-xs text-[#7a8980]">
-                      {format(model.requests)} request · {format(model.tokens)}{' '}
-                      token
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="mt-5 text-sm text-[#8a968e]">
-                Belum ada data model untuk ditampilkan.
-              </p>
-            )}
-          </section>
+          <ModelUsageChart
+            models={data?.models}
+            period={period}
+            unavailableMessage={usage.message}
+          />
           <footer className="mt-8 flex flex-wrap justify-between gap-2 text-[11px] text-[#8a968e]">
             <span>Tokenmaxxing · Dashboard pelanggan</span>
             <span className="break-all">Masuk sebagai {user.email}</span>
